@@ -16,5 +16,18 @@ export default [
       },
     },
   },
+  // ✅ Cypress test files support
+  {
+    files: ["cypress/**/*.js", "cypress/**/*.ts", "cypress.config.js"],
+    plugins: {
+      cypress,
+    },
+    languageOptions: {
+      globals: globals.browser,
+    },
+    rules: {
+      // You can extend or override rules here
+    },
+  },
   prettier,
 ];

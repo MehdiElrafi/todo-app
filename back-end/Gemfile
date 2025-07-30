@@ -45,4 +45,10 @@ group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
   gem "rubocop-rails", require: false
+
+  # RSpec testing framework to Ruby on Rails as a drop-in alternative to its default testing framework
+  gem "rspec-rails", "~> 8.0.0"
+
+  # Use Factory Bot for setting up Ruby objects as test data
+  gem "factory_bot_rails"
 end

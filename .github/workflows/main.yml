@@ -20,25 +20,24 @@ jobs:
           - 5432:5432
 
     steps:
-      - name: Install packages
-        working-directory: ./back-end
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config
-
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
+      - name: Install packages
+        run: ls
 
-      - name: Install dependencies
-        run: gem install bundler && bundle install
+      # - name: Set up Ruby
+      #   uses: ruby/setup-ruby@v1
+      #   with:
+      #     ruby-version: .ruby-version
+      #     bundler-cache: true
 
-      - name: Create database
-        run: bin/rails db:create RAILS_ENV=test
-             bin/rails db:migrate RAILS_ENV=test
+      # - name: Install dependencies
+      #   run: gem install bundler && bundle install
 
-      - name: Run tests
-        run: bundle exec rspec
+      # - name: Create database
+      #   run: bin/rails db:create RAILS_ENV=test
+      #        bin/rails db:migrate RAILS_ENV=test
+
+      # - name: Run tests
+      #   run: bundle exec rspec

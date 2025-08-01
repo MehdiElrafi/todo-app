@@ -33,11 +33,12 @@ jobs:
           bundler-cache: true
 
       - name: Install dependencies
-        run: pwd && gem install bundler && bundle install
+        run: gem install bundler && bundle install
 
       - name: Create database
-        run: bundle exec rails db:create RAILS_ENV=test
-             bundle exec rails db:migrate RAILS_ENV=test
+        run: |
+          bundle exec rails db:create RAILS_ENV=test
+          bundle exec rails db:migrate RAILS_ENV=test
 
       - name: Run tests
         run: bundle exec rspec

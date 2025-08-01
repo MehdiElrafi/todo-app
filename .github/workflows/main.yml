@@ -6,6 +6,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: back-end
 
     services:
       postgres:
@@ -18,6 +21,7 @@ jobs:
 
     steps:
       - name: Install packages
+        run: pwd
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config
 
       - name: Checkout code
@@ -26,19 +30,15 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: back-end/.ruby-version
+          ruby-version: .ruby-version
           bundler-cache: true
-          working-directory: back-end
 
       - name: Install dependencies
         run: gem install bundler && bundle install
-        working-directory: back-end
 
       - name: Create database
         run: bin/rails db:create RAILS_ENV=test
              bin/rails db:migrate RAILS_ENV=test
-        working-directory: back-end
 
       - name: Run tests
         run: bundle exec rspec
-        working-directory: back-end

@@ -24,16 +24,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install packages
-        run: pwd && sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: .ruby-version
+          ruby-version: 3.4.4
           bundler-cache: true
 
       - name: Install dependencies
-        run: gem install bundler && bundle install
+        run: pwd && gem install bundler && bundle install
 
       - name: Create database
         run: bin/rails db:create RAILS_ENV=test

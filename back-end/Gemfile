@@ -51,4 +51,7 @@ group :development, :test do
 
   # Use Factory Bot for setting up Ruby objects as test data
   gem "factory_bot_rails"
+
+  # ENV variables management for development and test environments
+  gem "dotenv-rails"
 end

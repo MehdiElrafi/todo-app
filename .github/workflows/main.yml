@@ -75,8 +75,7 @@ jobs:
 
       - name: Run tests
         run: |
-          npm run dev &                                 # Start server in background
-          wait-on http://localhost:$APP_PORT            # Wait for server to be ready
-          npm run e2e:chrome                             # Run your E2E tests
+          npm run dev
+          npm run e2e:chrome
         env:
           APP_PORT: 3000

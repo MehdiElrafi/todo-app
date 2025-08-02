@@ -71,7 +71,7 @@ jobs:
           node-version: '22.2.0'
 
       - name: Install dependencies
-        run: npm install --global wait-on
+        run: npm install
 
       - name: Run tests
         run: |

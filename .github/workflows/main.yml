@@ -81,3 +81,19 @@ jobs:
           wait-on: 'http://localhost:3000'
         env:
           APP_PORT: 3000
+
+      - name: Upload Cypress screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: front-end/cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Upload Cypress videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: front-end/cypress/videos
+          if-no-files-found: ignore

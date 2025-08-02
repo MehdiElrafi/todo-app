@@ -74,4 +74,8 @@ jobs:
         run: npm install
 
       - name: Run tests
-        run: npm run e2e:chrome
+        run: |
+          npm run dev
+          npm run e2e:chrome
+        env:
+          APP_PORT: 3000

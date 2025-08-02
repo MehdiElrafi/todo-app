@@ -62,21 +62,9 @@ jobs:
         working-directory: front-end
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.2.0'
-
-      - name: Install dependencies
-        run: npm install && npm install --save-dev wait-on
-
-      - name: Run tests
-        run: |
-          npm run dev &
-          wait-on http://localhost:$APP_PORT
-          npm run e2e:chrome
-        env:
-          APP_PORT: 3000
+      # Install npm dependencies, cache them correctly
+      # and run all Cypress tests
+      - name: Cypress run
+        uses: cypress-io/github-action@v6

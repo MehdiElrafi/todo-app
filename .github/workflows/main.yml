@@ -75,5 +75,5 @@ jobs:
 
       - name: Cypress run
         uses: cypress-io/github-action@v6
-        with:
-          working-directory: front-end
+        env:
+          APP_PORT: 3000

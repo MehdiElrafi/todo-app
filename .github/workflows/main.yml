@@ -75,7 +75,8 @@ jobs:
 
       - name: Run tests
         run: |
-          npm run dev
+          npm run dev &
+          wait-on http://localhost:$APP_PORT
           npm run e2e:chrome
         env:
           APP_PORT: 3000

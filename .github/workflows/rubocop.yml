@@ -2,17 +2,12 @@ name: RuboCop
 
 on: [pull_request]
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: back-end
-    env:
-      BUNDLE_ONLY: rubocop
 
     steps:
     - name: Checkout code
@@ -25,7 +20,7 @@ jobs:
         bundler-cache: true
 
     - name: Install dependencies
-      run: pwd && gem install bundler && bundle install
+      run: gem install bundler && bundle install
 
     - name: Run RuboCop
-      run: pwd && bundle exec rubocop --parallel
+      run: bundle exec rubocop --parallel

@@ -25,7 +25,7 @@ jobs:
         bundler-cache: true
 
     - name: Install dependencies
-      run: gem install bundler && bundle install
+      run: pwd && gem install bundler && bundle install
 
     - name: Run RuboCop
-      run: bundle exec rubocop --parallel
+      run: pwd && bundle exec rubocop --parallel

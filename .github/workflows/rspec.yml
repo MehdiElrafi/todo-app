@@ -1,4 +1,4 @@
-name: Automation Tests
+name: Rails rspecs
 
 on:
   [pull_request]

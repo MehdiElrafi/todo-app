@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export default defineConfig({
+  video: true,
   e2e: {
     baseUrl: `http://localhost:${process.env.APP_PORT}`,
     setupNodeEvents(on, config) {

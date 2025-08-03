@@ -1,10 +1,10 @@
-name: Unit Tests
+name: Automation Tests
 
 on:
   [pull_request]
 
 jobs:
-  test:
+  back-end:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -55,3 +55,45 @@ jobs:
           DB_PORT: 5432
           RAILS_ENV: test
         run: bundle exec rspec
+  front-end:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front-end
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.2.0'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: front-end
+          start: npm run dev
+          wait-on: 'http://localhost:3000'
+        env:
+          APP_PORT: 3000
+
+      - name: Upload Cypress screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: front-end/cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Upload Cypress videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: front-end/cypress/videos
+          if-no-files-found: ignore

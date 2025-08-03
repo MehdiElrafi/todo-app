@@ -10,7 +10,8 @@
     "format": "prettier --write \"src/**/*.{js,jsx}\"",
     "preview": "vite preview",
     "cy:open": "cypress open",
-    "e2e:chrome": "cypress run --browser chrome"
+    "e2e:chrome": "cypress run --browser chrome",
+    "e2e:cloud": "npx cypress run --record --key 3dd9398e-150a-49d8-b350-42dfb1d20fd8"
   },
   "dependencies": {
     "dotenv": "^17.2.1",

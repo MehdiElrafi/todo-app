@@ -1,25 +1,18 @@
-name: RuboCop
+name: Code style
 
 on: [pull_request]
 
 jobs:
-  build:
+  lint:
+    name: all linters
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: back-end
-    env:
-      BUNDLE_ONLY: rubocop
-
+    strategy:
+      fail-fast: false
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: 3.4.4
-        bundler-cache: true
-
-    - name: Run RuboCop
-      run: bundle exec rubocop --parallel
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+      - name: rubocop
+        run: bundle exec rubocop --parallel

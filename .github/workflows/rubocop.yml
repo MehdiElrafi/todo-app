@@ -1,0 +1,28 @@
+name: Code style
+
+on: [pull_request]
+
+jobs:
+  lint:
+    name: rubocop
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+          working-directory: back-end
+
+      - name: Install dependencies
+        run: bundle install
+        working-directory: back-end
+
+      - name: Run RuboCop
+        run: bundle exec rubocop --parallel
+        working-directory: back-end

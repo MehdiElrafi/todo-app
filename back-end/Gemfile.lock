@@ -292,13 +292,12 @@ GEM
       activejob (>= 7.2)
       activerecord (>= 7.2)
       railties (>= 7.2)
-    solid_queue (1.2.1)
+    solid_queue (0.6.1)
       activejob (>= 7.1)
       activerecord (>= 7.1)
       concurrent-ruby (>= 1.3.1)
       fugit (~> 1.11.0)
       railties (>= 7.1)
-      thor (>= 1.3.1)
     sshkit (1.24.0)
       base64
       logger
@@ -350,8 +349,8 @@ DEPENDENCIES
   rubocop-rails
   rubocop-rails-omakase
   solid_cable
-  solid_cache
-  solid_queue
+  solid_cache (>= 0.4)
+  solid_queue (< 1.0)
   thruster
   tzinfo-data
 

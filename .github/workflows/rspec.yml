@@ -1,7 +1,10 @@
 name: Rails rspecs
 
 on:
-  [pull_request]
+  pull_request: # Runs on all pull requests (any base branch)
+  push:
+    branches:
+      - main # Runs only when pushing to main
 
 jobs:
   back-end:

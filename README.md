@@ -13,7 +13,7 @@ A full-stack **Todo Management App** built with:
 1️⃣ Back-end (Ruby on Rails)
 ```bash
 cd back-end
-rvm install "ruby-3.4.4"
+# Install postgres & ruby 3.4.4 & rails 8
 gem install bundler
 bundle install
 ```

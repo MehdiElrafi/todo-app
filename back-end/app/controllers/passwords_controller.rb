@@ -1,20 +1,21 @@
 class PasswordsController < ApplicationController
   allow_unauthenticated_access
-  before_action :set_user_by_token, only: %i[ edit update ]
+  before_action :set_user_by_token, only: %i[edit update]
 
   def new
   end
 
+  def edit
+  end
+
   def create
-    if user = User.find_by(email_address: params[:email_address])
+    if (user = User.find_by(email_address: params[:email_address]))
       PasswordsMailer.reset(user).deliver_later
-      render json: { message: "Password reset instructions sent (if user with that email address exists)." }, status: :created
+      render json: { message: "Password reset instructions sent (if user with that email address exists)." },
+             status: :created
     else
       render json: { error: "Email address not found." }, status: :not_found
     end
-  end
-
-  def edit
   end
 
   def update
@@ -26,9 +27,10 @@ class PasswordsController < ApplicationController
   end
 
   private
-    def set_user_by_token
-      @user = User.find_by_password_reset_token!(params[:token])
-    rescue ActiveSupport::MessageVerifier::InvalidSignature
-      render json: { error: "Invalid or expired token." }, status: :unprocessable_entity
-    end
+
+  def set_user_by_token
+    @user = User.find_by!(password_reset_token: params[:token])
+  rescue ActiveSupport::MessageVerifier::InvalidSignature
+    render json: { error: "Invalid or expired token." }, status: :unprocessable_entity
+  end
 end

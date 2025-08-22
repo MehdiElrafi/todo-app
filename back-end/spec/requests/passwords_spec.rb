@@ -20,7 +20,7 @@ RSpec.describe "Passwords API", type: :request do
       # request reset
       post "/passwords", params: { email_address: user.email_address }
       expect(ActionMailer::Base.deliveries.size).to eq(1)
-      
+
       token = user.reload.password_reset_token
       password = BCrypt::Password.create("newpassword123")
 

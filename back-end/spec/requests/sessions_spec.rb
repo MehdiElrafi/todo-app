@@ -8,7 +8,7 @@ RSpec.describe "Sessions API", type: :request do
       post "/session", params: { email_address: user.email_address, password: "password123" }
 
       expect(response).to have_http_status(:created)
-      json = JSON.parse(response.body)
+      json = response.parsed_body
       expect(json["email_address"]).to eq(user.email_address)
     end
 
@@ -16,7 +16,7 @@ RSpec.describe "Sessions API", type: :request do
       post "/session", params: { email_address: user.email_address, password: "wrong" }
 
       expect(response).to have_http_status(:unauthorized)
-      json = JSON.parse(response.body)      
+      json = response.parsed_body
       expect(json).to have_key("error")
     end
   end
@@ -27,7 +27,7 @@ RSpec.describe "Sessions API", type: :request do
       get "/session"
 
       expect(response).to have_http_status(:ok)
-      json = JSON.parse(response.body)
+      json = response.parsed_body
       expect(json["email_address"]).to eq(user.email_address)
     end
   end

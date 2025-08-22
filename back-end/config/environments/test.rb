@@ -36,6 +36,10 @@ Rails.application.configure do
   # ActionMailer::Base.deliveries array.
   config.action_mailer.delivery_method = :test
 
+  # Use inline job processing for tests
+  # With :inline adapter, deliver_later will behave exactly like deliver_now automatically
+  config.active_job.queue_adapter = :inline
+
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "example.com" }
 

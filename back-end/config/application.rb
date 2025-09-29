@@ -31,7 +31,7 @@ module BackEnd
 
     # Add middleware for cookies and sessions
     config.middleware.use ActionDispatch::Cookies
-    config.session_store :cookie_store, key: "_interslice_session"
+    config.session_store :cookie_store, key: "_interslice_session", same_site: :lax
     config.middleware.use config.session_store, config.session_options
   end
 end

@@ -14,11 +14,14 @@
     "e2e:cloud": "npx cypress run --record --key 3dd9398e-150a-49d8-b350-42dfb1d20fd8"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.13",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "dotenv": "^17.2.1",
+    "lucide-react": "^0.544.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.13"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

@@ -1,8 +1,5 @@
-import dotenv from "dotenv";
-
 // API Configuration and HTTP client
-dotenv.config();
-const API_BASE = process.env.API_BASE_URL;
+const API_BASE = import.meta.env.VITE_API_URL;
 
 const apiClient = {
   post: async (endpoint, data) => {

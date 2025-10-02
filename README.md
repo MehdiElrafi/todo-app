@@ -31,7 +31,7 @@ npm install
 
 ```bash
 back-end env variable: FRONT_END_URL
-front-end env variable: API_BASE_URL
+front-end env variable: VITE_API_URL
 ```
 
 Note:

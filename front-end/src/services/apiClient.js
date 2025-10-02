@@ -1,5 +1,5 @@
 // API Configuration and HTTP client
-const API_BASE = "http://localhost:3000"; // Adjust to your Rails API URL
+const API_BASE = import.meta.env.VITE_API_URL;
 
 const apiClient = {
   post: async (endpoint, data) => {

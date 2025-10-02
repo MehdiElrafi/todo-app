@@ -1,5 +1,8 @@
+import dotenv from "dotenv";
+
 // API Configuration and HTTP client
-const API_BASE = "http://localhost:3000"; // Adjust to your Rails API URL
+dotenv.config();
+const API_BASE = process.env.API_BASE_URL;
 
 const apiClient = {
   post: async (endpoint, data) => {

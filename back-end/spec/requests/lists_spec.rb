@@ -8,6 +8,20 @@ RSpec.describe "Lists API", type: :request do
   before do
     login user
   end
+
+  let(:valid_params) do
+    {
+      name: "New List",
+      project_id: project.id
+    }
+  end
+
+  let(:invalid_params) do
+    {
+      name: "",
+      project_id: project.id
+    }
+  end
   describe "GET /index" do
     it "returns a successful response" do
       get project_lists_path(project)
@@ -33,11 +47,15 @@ RSpec.describe "Lists API", type: :request do
 
   describe "POST /create" do
     it "creates a new list" do
-      list_params = { name: "New List", project_id: project.id }
-
-      post project_lists_path(project), params: list_params
+      post project_lists_path(project), params: valid_params
       expect(response).to have_http_status(:created)
       expect(response.body).to include("New List")
+    end
+
+    it "returns error for invalid parameters" do
+      post project_lists_path(project), params: invalid_params
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("can't be blank")
     end
   end
 
@@ -48,6 +66,12 @@ RSpec.describe "Lists API", type: :request do
       put project_list_path(project, list), params: update_params
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Updated List Name")
+    end
+
+    it "returns error for invalid update parameters" do
+      put project_list_path(project, list), params: invalid_params
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("can't be blank")
     end
   end
 

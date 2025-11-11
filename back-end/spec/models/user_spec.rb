@@ -3,6 +3,8 @@ require 'rails_helper'
 RSpec.describe User, type: :model do
   describe "associations" do
     it { expect(described_class.reflect_on_association(:sessions).macro).to eq(:has_many) }
+    it { expect(described_class.reflect_on_association(:user_tasks).macro).to eq(:has_many) }
+    it { expect(described_class.reflect_on_association(:tasks).macro).to eq(:has_many) }
   end
 
   describe "password security" do

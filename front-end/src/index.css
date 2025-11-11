@@ -1,1 +1,54 @@
 @import "tailwindcss";
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Optional: Add smooth backdrop blur transition */
+.backdrop-blur-sm {
+  transition: backdrop-filter 0.2s ease-out;
+}
+
+.rotate-icon {
+  transform: rotate(0deg);
+  transition: transform 0.2s ease-out;
+}
+
+.rotate-icon.open {
+  transform: rotate(90deg);
+}
+
+.projects-content {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: all 0.2s ease-out;
+}
+
+.projects-content.open {
+  max-height: 500px;
+  opacity: 1;
+}

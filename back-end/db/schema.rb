@@ -10,9 +10,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_06_220628) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_11_163528) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "labels", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "color"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "lists", force: :cascade do |t|
     t.string "name", null: false
@@ -185,6 +192,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_06_220628) do
     t.bigint "list_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "label_id"
+    t.index ["label_id"], name: "index_tasks_on_label_id"
     t.index ["list_id"], name: "index_tasks_on_list_id"
   end
 
@@ -213,6 +222,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_06_220628) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "tasks", "labels"
   add_foreign_key "tasks", "lists"
   add_foreign_key "user_tasks", "tasks"
   add_foreign_key "user_tasks", "users"

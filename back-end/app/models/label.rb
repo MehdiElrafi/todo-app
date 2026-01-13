@@ -1,5 +1,6 @@
 class Label < ApplicationRecord
   has_many :tasks, dependent: :nullify
+  belongs_to :project
 
   validates :name, presence: true
   validate :color_format

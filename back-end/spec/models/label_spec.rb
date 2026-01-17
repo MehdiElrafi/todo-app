@@ -22,7 +22,7 @@ RSpec.describe Label, type: :model do
     end
 
     it "valid format of color" do
-      label = Label.new(name: "Test", color: "#FFAABB")
+      label = Label.new(name: "Test", color: "#FFAABB", project: create(:project))
 
       expect(label.valid?).to be_truthy
     end

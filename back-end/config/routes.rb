@@ -1,12 +1,12 @@
 Rails.application.routes.draw do
   resource :session
   resources :projects do
+    resources :labels
     resources :lists do
       resources :tasks
     end
   end
 
-  resources :labels
   resources :passwords, param: :token
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

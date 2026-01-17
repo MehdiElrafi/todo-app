@@ -3,6 +3,7 @@ require 'rails_helper'
 RSpec.describe Label, type: :model do
   describe 'associations' do
     it { expect(described_class.reflect_on_association(:tasks).macro).to eq(:has_many) }
+    it { expect(described_class.reflect_on_association(:project).macro).to eq(:belongs_to) }
   end
 
   describe 'validations' do
@@ -21,7 +22,7 @@ RSpec.describe Label, type: :model do
     end
 
     it "valid format of color" do
-      label = Label.new(name: "Test", color: "#FFAABB")
+      label = Label.new(name: "Test", color: "#FFAABB", project: create(:project))
 
       expect(label.valid?).to be_truthy
     end

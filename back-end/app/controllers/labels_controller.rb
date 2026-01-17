@@ -44,6 +44,6 @@ class LabelsController < ApplicationController
   end
 
   def label_params
-    params.permit(:name, :color)
+    params.permit(:name, :color, :project_id)
   end
 end

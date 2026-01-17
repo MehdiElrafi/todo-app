@@ -1,15 +1,16 @@
 require 'rails_helper'
 
 RSpec.describe "Labels", type: :request do
+  let(:project) { create(:project) }
   let(:label) { create(:label) }
   let(:user) { create(:user) }
 
   let(:valid_attributes) do
-    { name: "Important", color: "#00FF00" }
+    { name: "Important", color: "#00FF00", project_id: project.id }
   end
 
   let(:invalid_attributes) do
-    { name: "", color: "invalid-color" }
+    { name: "", color: "invalid-color", project_id: project.id }
   end
 
   before do
@@ -18,7 +19,7 @@ RSpec.describe "Labels", type: :request do
 
   describe "GET /index" do
     it "returns a success response" do
-      Label.create!(name: "Urgent", color: "#FF0000")
+      Label.create!(name: "Urgent", color: "#FF0000", project_id: project.id)
       get labels_path
       expect(response).to be_successful
       expect(response.body).to include("Urgent")

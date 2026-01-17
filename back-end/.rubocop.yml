@@ -39,3 +39,7 @@ Style/StringLiterals:
 
 Metrics/BlockLength:
   Enabled: false
+
+Rails/NotNullColumn:
+  Enabled: false
+  

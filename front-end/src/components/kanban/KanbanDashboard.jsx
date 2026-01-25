@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Plus, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronRight, Plus, X, Tag } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import ProfileDropdown from '../auth/ProfileDropdown';
 
@@ -13,10 +13,15 @@ const KanbanDashboard = () => {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showNewListModal, setShowNewListModal] = useState(false);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedListForTask, setSelectedListForTask] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [newProjectName, setNewProjectName] = useState('');
   const [newListName, setNewListName] = useState('');
   const [newTaskData, setNewTaskData] = useState({ title: '', due_date: '' });
+  const [projectLabels, setProjectLabels] = useState([]);
+  const [showLabelPopover, setShowLabelPopover] = useState(false);
+  const labelPopoverRef = useRef(null);
 
   // Fetch all projects
   useEffect(() => {
@@ -29,6 +34,23 @@ const KanbanDashboard = () => {
       fetchLists(selectedProject.id);
     }
   }, [selectedProject]);
+
+  // Close label popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (labelPopoverRef.current && !labelPopoverRef.current.contains(event.target)) {
+        setShowLabelPopover(false);
+      }
+    };
+
+    if (showLabelPopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showLabelPopover]);
 
   const fetchProjects = async () => {
     try {
@@ -43,7 +65,6 @@ const KanbanDashboard = () => {
   };
 
   const fetchLists = async (projectId) => {
-    setLoading(true);
     try {
       const data = await apiClient.get(`/projects/${projectId}/lists`);
       setLists(data);
@@ -57,8 +78,6 @@ const KanbanDashboard = () => {
       setTasks(tasksData);
     } catch (error) {
       console.error('Error fetching lists:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -72,6 +91,21 @@ const KanbanDashboard = () => {
       fetchProjects();
     } catch (error) {
       console.error('Error creating project:', error);
+    }
+  };
+
+  const showTask = async (listId, taskId) => {
+    if (!selectedProject) return;
+    try {
+      const data = await apiClient.get(
+        `/projects/${selectedProject.id}/lists/${listId}/tasks/${taskId}`
+      );
+      // Ensure list_id is set for later use
+      data.list_id = listId;
+      setSelectedTask(data);
+      setShowTaskModal(true);
+    } catch (error) {
+      console.error('Error fetching task:', error);
     }
   };
 
@@ -90,31 +124,120 @@ const KanbanDashboard = () => {
 
   const createTask = async () => {
     if (!newTaskData.title.trim() || !selectedListForTask || !selectedProject) return;
-    
+
+    const tempId = `temp-${Date.now()}`;
+    const optimisticTask = {
+      id: tempId,
+      title: newTaskData.title,
+      due_date: newTaskData.due_date || null
+    };
+
+    // Optimistically add task to UI
+    setTasks(prev => ({
+      ...prev,
+      [selectedListForTask]: [...(prev[selectedListForTask] || []), optimisticTask]
+    }));
+
+    // Close modal immediately for smooth UX
+    setNewTaskData({ title: '', due_date: '' });
+    setShowNewTaskModal(false);
+    setSelectedListForTask(null);
+
     try {
-      await apiClient.post(
+      const created = await apiClient.post(
         `/projects/${selectedProject.id}/lists/${selectedListForTask}/tasks`,
-        newTaskData
+        optimisticTask
       );
-      setNewTaskData({ title: '', due_date: '' });
-      setShowNewTaskModal(false);
-      setSelectedListForTask(null);
-      fetchLists(selectedProject.id);
+
+      // Replace optimistic task with server-provided task (match by tempId)
+      const createdTask = created && created.id ? created : created;
+      setTasks(prev => ({
+        ...prev,
+        [selectedListForTask]: (prev[selectedListForTask] || []).map(t =>
+          t.id === tempId ? createdTask : t
+        )
+      }));
     } catch (error) {
       console.error('Error creating task:', error);
+      // Remove optimistic task and refetch the affected list tasks to restore state
+      setTasks(prev => ({
+        ...prev,
+        [selectedListForTask]: (prev[selectedListForTask] || []).filter(t => t.id !== tempId)
+      }));
+      try {
+        const listTasks = await apiClient.get(
+          `/projects/${selectedProject.id}/lists/${selectedListForTask}/tasks`
+        );
+        setTasks(prev => ({ ...prev, [selectedListForTask]: listTasks }));
+      } catch (err) {
+        console.error('Error refetching tasks after failed create:', err);
+      }
     }
   };
 
   const deleteTask = async (listId, taskId) => {
     if (!selectedProject) return;
-    
+
+    // Optimistically remove the task from UI
+    setTasks(prev => ({
+      ...prev,
+      [listId]: (prev[listId] || []).filter(t => t.id !== taskId)
+    }));
+
     try {
       await apiClient.delete(
         `/projects/${selectedProject.id}/lists/${listId}/tasks/${taskId}`
       );
-      fetchLists(selectedProject.id);
     } catch (error) {
       console.error('Error deleting task:', error);
+      // On error, refetch tasks for the affected list to restore state
+      try {
+        const listTasks = await apiClient.get(
+          `/projects/${selectedProject.id}/lists/${listId}/tasks`
+        );
+        setTasks(prev => ({ ...prev, [listId]: listTasks }));
+      } catch (err) {
+        console.error('Error refetching tasks after failed delete:', err);
+      }
+    }
+  };
+
+  const fetchProjectLabels = async () => {
+    if (!selectedProject) return;
+    try {
+      const labels = await apiClient.get(`/projects/${selectedProject.id}/labels`);
+      setProjectLabels(labels);
+    } catch (error) {
+      console.error('Error fetching project labels:', error);
+    }
+  };
+
+  const handleSetLabel = async (labelId) => {
+    if (!selectedTask || !selectedProject) return;
+    try {
+      const updatedTask = await apiClient.patch(
+        `/projects/${selectedProject.id}/lists/${selectedTask.list_id}/tasks/${selectedTask.id}`,
+        { label_id: labelId }
+      );
+      setSelectedTask(updatedTask);
+      setShowLabelPopover(false);
+    } catch (error) {
+      console.error('Error updating task label:', error);
+    }
+  };
+
+  const handleRemoveLabel = async () => {
+    if (!selectedTask || !selectedProject) return;
+
+    try {
+      const updatedTask = await apiClient.patch(
+        `/projects/${selectedProject.id}/lists/${selectedTask.list_id}/tasks/${selectedTask.id}`,
+        { label_id: null }
+      );
+      setSelectedTask(updatedTask);
+      setShowLabelPopover(false);
+    } catch (error) {
+      console.error('Error removing task label:', error);
     }
   };
 
@@ -194,22 +317,36 @@ const KanbanDashboard = () => {
                       {tasks[list.id]?.map(task => (
                         <div
                           key={task.id}
-                          className="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
+                          className="bg-white rounded-lg p-3 cursor-pointer"
+                          onClick={() => showTask(list.id, task.id)}
                         >
-                          <div className="flex justify-between items-start mb-1">
-                            <h4 className="font-medium text-gray-800">{task.title}</h4>
+                          <div className="flex justify-between items-start mb-1 gap-2">
+                            <div className="flex flex-col gap-y-2 flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-800 break-words w-full">{task.title}</h4>
+                              {/* Selected Label Display */}
+                              {task.label && (
+                                <div className="mb-3 flex items-center gap-2">
+                                  <div
+                                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-white text-sm font-medium"
+                                    style={{ backgroundColor: task.label.color || '#999999' }}
+                                  >
+                                    <span>{task.label.name}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                             <button
-                              onClick={() => deleteTask(list.id, task.id)}
-                              className="text-gray-400 hover:text-red-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Are you sure you want to delete this task?')) {
+                                  deleteTask(list.id, task.id);
+                                }
+                              }}
+                              className="text-gray-400 hover:text-red-600 cursor-pointer"
                             >
                               <X size={16} />
                             </button>
                           </div>
-                          {task.due_date && (
-                            <p className="text-xs text-gray-500">
-                              Due: {new Date(task.due_date).toLocaleDateString()}
-                            </p>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -261,13 +398,13 @@ const KanbanDashboard = () => {
                   setShowNewProjectModal(false);
                   setNewProjectName('');
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={createProject}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer"
               >
                 Create
               </button>
@@ -295,13 +432,13 @@ const KanbanDashboard = () => {
                   setShowNewListModal(false);
                   setNewListName('');
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={createList}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer"
               >
                 Create
               </button>
@@ -335,15 +472,118 @@ const KanbanDashboard = () => {
                   setNewTaskData({ title: '', due_date: '' });
                   setSelectedListForTask(null);
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={createTask}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer"
               >
                 Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Task Details Modal */}
+      {showTaskModal && selectedTask && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-gray-500/50 flex items-center justify-center z-50 animate-fadeIn">
+          <div className="bg-white rounded-lg p-6 w-96 animate-slideUp">
+            <div className="flex justify-between items-start gap-2">
+              <div className="flex flex-col gap-y-2 flex-1 min-w-0">
+                <h3 className="text-lg font-bold break-words w-full">{selectedTask.title}</h3>
+                {/* Selected Label Display */}
+                {selectedTask.label && (
+                  <div className="mb-3 flex items-center gap-2">
+                    <div
+                      className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-white text-sm font-medium"
+                      style={{ backgroundColor: selectedTask.label.color || '#999999' }}
+                    >
+                      <span>{selectedTask.label.name}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setShowTaskModal(false);
+                  setSelectedTask(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Set Label Button */}
+            <div className="mb-4 relative" ref={labelPopoverRef}>
+              <button
+                onClick={() => {
+                  setShowLabelPopover(!showLabelPopover);
+                  if (!showLabelPopover) {
+                    fetchProjectLabels();
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+              >
+                <Tag size={16} />
+                Set Label
+              </button>
+
+              {/* Label Popover */}
+              {showLabelPopover && (
+                <div className="absolute top-full mt-2 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 max-h-60 overflow-y-auto">
+                  {projectLabels.length > 0 ? (
+                    <>
+                      <div className="space-y-2 mb-2">
+                        {projectLabels.map(label => (
+                          <button
+                            key={label.id}
+                            onClick={() => handleSetLabel(label.id)}
+                            className="w-full flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer text-left transition-colors"
+                          >
+                            <div
+                              className="w-4 h-4 rounded flex-shrink-0"
+                              style={{ backgroundColor: label.color || '#999999' }}
+                            ></div>
+                            <span className="text-sm text-gray-700">{label.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                      {selectedTask.label && (
+                        <div className="border-t border-gray-200 pt-2 mt-2">
+                          <button
+                            onClick={handleRemoveLabel}
+                            className="w-full p-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer transition-colors"
+                          >
+                            Remove Label
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500 p-2">No labels available</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {selectedTask.due_date ? (
+              <p className="text-sm text-gray-600">Due: {new Date(selectedTask.due_date).toLocaleDateString()}</p>
+            ) : (
+              <p className="text-sm text-gray-500">No due date</p>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowTaskModal(false);
+                  setSelectedTask(null);
+                }}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>

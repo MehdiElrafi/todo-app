@@ -52,6 +52,25 @@ const apiClient = {
 
     return true;
   },
+
+  patch: async (endpoint, data) => {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw { status: response.status, ...result };
+    }
+
+    return result;
+  },
 };
 
 export default apiClient;

@@ -20,7 +20,7 @@ RSpec.describe "Labels", type: :request do
   describe "GET /index" do
     it "returns a success response" do
       Label.create!(name: "Urgent", color: "#FF0000", project_id: project.id)
-      get labels_path
+      get project_labels_path(project_id: project.id)
       expect(response).to be_successful
       expect(response.body).to include("Urgent")
     end
@@ -28,7 +28,7 @@ RSpec.describe "Labels", type: :request do
 
   describe "GET /show" do
     it "returns a success response" do
-      get label_path(label)
+      get project_label_path(project_id: project.id, id: label.id)
       expect(response).to be_successful
       expect(response.body).to include(label.name)
     end
@@ -37,7 +37,7 @@ RSpec.describe "Labels", type: :request do
   describe "POST /create" do
     context "with valid parameters" do
       it "creates a new Label" do
-        post labels_path, params: valid_attributes
+        post project_labels_path(project_id: project.id), params: valid_attributes
         expect(response).to have_http_status(:created)
         expect(response.body).to include("Important")
       end
@@ -45,7 +45,7 @@ RSpec.describe "Labels", type: :request do
 
     context "with invalid parameters" do
       it "does not create a new Label" do
-        post labels_path, params: invalid_attributes
+        post project_labels_path(project_id: project.id), params: invalid_attributes
         expect(response).to have_http_status(:unprocessable_entity)
       end
     end
@@ -58,7 +58,7 @@ RSpec.describe "Labels", type: :request do
       end
 
       it "updates the requested label" do
-        put label_path(label), params: new_attributes
+        put project_label_path(project_id: project.id, id: label.id), params: new_attributes
         label.reload
         expect(label.name).to eq("Not Urgent")
         expect(label.color).to eq("#0000FF")
@@ -70,7 +70,7 @@ RSpec.describe "Labels", type: :request do
 
     context "with invalid parameters" do
       it "does not update the label" do
-        put label_path(label), params: invalid_attributes
+        put project_label_path(project_id: project.id, id: label.id), params: invalid_attributes
         label.reload
         expect(label.name).not_to eq("")
         expect(response).to have_http_status(:unprocessable_entity)
@@ -80,7 +80,7 @@ RSpec.describe "Labels", type: :request do
 
   describe "DELETE /destroy" do
     it "destroys the requested label" do
-      delete label_path(label)
+      delete project_label_path(project_id: project.id, id: label.id)
       expect(response).to have_http_status(:no_content)
     end
   end

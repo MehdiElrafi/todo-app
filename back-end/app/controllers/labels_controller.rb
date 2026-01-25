@@ -1,18 +1,18 @@
 class LabelsController < ApplicationController
   before_action :set_label, only: %w[show update destroy]
 
-  # GET /labels
+  # GET /projects/:project_id/labels
   def index
-    @labels = Label.all
+    @labels = Label.where(project_id: params[:project_id])
     render json: @labels
   end
 
-  # GET /labels/:id
+  # GET /projects/:project_id/labels/:id
   def show
     render json: @label
   end
 
-  # POST /labels
+  # POST /projects/:project_id/labels
   def create
     @label = Label.new(label_params)
     if @label.save
@@ -22,7 +22,7 @@ class LabelsController < ApplicationController
     end
   end
 
-  # PUT /labels/:id
+  # PUT /projects/:project_id/labels/:id
   def update
     if @label.update(label_params)
       render json: @label, status: :ok
@@ -31,7 +31,7 @@ class LabelsController < ApplicationController
     end
   end
 
-  # DELETE /labels/:id
+  # DELETE /projects/:project_id/labels/:id
   def destroy
     @label.destroy
     head :no_content

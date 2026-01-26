@@ -317,7 +317,7 @@ const KanbanDashboard = () => {
                       {tasks[list.id]?.map(task => (
                         <div
                           key={task.id}
-                          className="bg-white rounded-lg p-3 cursor-pointer"
+                          className="bg-white rounded-lg p-3 cursor-pointer border border-transparent hover:border-purple-700"
                           onClick={() => showTask(list.id, task.id)}
                         >
                           <div className="flex justify-between items-start mb-1 gap-2">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Plus, X, Tag } from 'lucide-react';
+import { ChevronRight, Plus, X, Tag, MoreVertical } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import ProfileDropdown from '../auth/ProfileDropdown';
 
@@ -22,6 +22,7 @@ const KanbanDashboard = () => {
   const [projectLabels, setProjectLabels] = useState([]);
   const [showLabelPopover, setShowLabelPopover] = useState(false);
   const labelPopoverRef = useRef(null);
+  const [openProjectMenu, setOpenProjectMenu] = useState(null);
 
   // Fetch all projects
   useEffect(() => {
@@ -51,6 +52,23 @@ const KanbanDashboard = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showLabelPopover]);
+
+  // Close project menu when clicking outside
+  useEffect(() => {
+    if (!openProjectMenu) return;
+
+    const handleClickOutside = (event) => {
+      // If click is outside the project menu area, close it
+      if (!event.target.closest('[role="button"], [data-project-menu-button], div[data-project-menu-content]')) {
+        setOpenProjectMenu(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openProjectMenu]);
 
   const fetchProjects = async () => {
     try {
@@ -91,6 +109,29 @@ const KanbanDashboard = () => {
       fetchProjects();
     } catch (error) {
       console.error('Error creating project:', error);
+    }
+  };
+
+  const deleteProject = async (projectId) => {
+    // Optimistically remove the project from UI
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+    
+    // If the deleted project was selected, select the first remaining project
+    if (selectedProject?.id === projectId) {
+      const remaining = projects.filter(p => p.id !== projectId);
+      setSelectedProject(remaining.length > 0 ? remaining[0] : null);
+    }
+
+    try {
+      await apiClient.delete(`/projects/${projectId}`);
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      // On error, refetch projects to restore state
+      try {
+        await fetchProjects();
+      } catch (err) {
+        console.error('Error refetching projects after failed delete:', err);
+      }
     }
   };
 
@@ -273,7 +314,7 @@ const KanbanDashboard = () => {
           <h1 className="text-xl font-bold text-gray-800">Todo App</h1>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 p-4">
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
               <button
@@ -293,23 +334,53 @@ const KanbanDashboard = () => {
               </button>
             </div>
             
-            <div className={`projects-content ${isProjectsOpen ? 'open' : ''}`}>
-              <div className="ml-4 space-y-1">
+            {isProjectsOpen && (
+              <div className="ml-4 space-y-1 relative z-40">
                 {projects.map(project => (
-                  <button
-                    key={project.id}
-                    onClick={() => setSelectedProject(project)}
-                    className={`w-full text-left px-3 py-2 rounded text-sm cursor-pointer ${
-                      selectedProject?.id === project.id
-                        ? 'bg-purple-100 text-purple-700 font-medium'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {project.name}
-                  </button>
+                  <div key={project.id} className="flex items-center group">
+                    <button
+                      onClick={() => setSelectedProject(project)}
+                      className={`flex-1 text-left px-3 py-2 rounded text-sm cursor-pointer ${
+                        selectedProject?.id === project.id
+                          ? 'bg-purple-100 text-purple-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {project.name}
+                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenProjectMenu(openProjectMenu === project.id ? null : project.id);
+                        }}
+                        className="p-1 rounded cursor-pointer transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                        title="Project actions"
+                      >
+                        <MoreVertical size={16} className="text-gray-600" />
+                      </button>
+                      {openProjectMenu === project.id && (
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-max">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Are you sure you want to delete this project?')) {
+                                deleteProject(project.id);
+                                setOpenProjectMenu(null);
+                              }
+                            }}
+                            className="w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <X size={16} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

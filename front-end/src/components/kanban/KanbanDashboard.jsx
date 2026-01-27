@@ -202,6 +202,30 @@ const KanbanDashboard = () => {
     }
   };
 
+  const deleteList = async (listId) => {
+    if (!selectedProject) return;
+
+    setLists(prev => prev.filter(l => l.id !== listId));
+    setTasks(prev => {
+      const newTasks = { ...prev };
+      delete newTasks[listId];
+      return newTasks;
+    });
+
+    try {
+      await apiClient.delete(
+        `/projects/${selectedProject.id}/lists/${listId}`
+      );
+    } catch (error) {
+      console.error('Error deleting list:', error);
+      try {
+        await fetchLists(selectedProject.id);
+      } catch (err) {
+        console.error('Error refetching lists after failed delete:', err);
+      }
+    }
+  };
+
   const fetchProjectLabels = async () => {
     if (!selectedProject) return;
     try {
@@ -311,7 +335,19 @@ const KanbanDashboard = () => {
               {lists.map(list => (
                 <div key={list.id} className="flex-shrink-0 w-80">
                   <div className="bg-gray-100 rounded-lg p-4 h-full flex flex-col">
-                    <h3 className="font-semibold text-gray-800 mb-4">{list.name}</h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-semibold text-gray-800">{list.name}</h3>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this list?')) {
+                            deleteList(list.id);
+                          }
+                        }}
+                        className="text-gray-400 hover:text-red-600 cursor-pointer"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
                     
                     <div className="flex-1 space-y-3 overflow-y-auto mb-4">
                       {tasks[list.id]?.map(task => (

@@ -36,7 +36,7 @@ class ListsController < ApplicationController
   private
 
   def list_params
-    params.permit(:name, :project_id)
+    params.permit(:name, :position, :project_id)
   end
 
   def set_list

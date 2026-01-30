@@ -28,7 +28,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_28_201420) do
     t.bigint "project_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "position", default: 0, null: false
+    t.integer "position"
     t.index ["project_id"], name: "index_lists_on_project_id"
   end
 

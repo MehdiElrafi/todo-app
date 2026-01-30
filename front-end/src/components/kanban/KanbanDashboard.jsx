@@ -154,9 +154,7 @@ const KanbanDashboard = () => {
     if (!newListName.trim() || !selectedProject) return;
     
     try {
-      // Compute next position: max existing position (or 0) + 1
-      const nextPosition = (lists || []).reduce((max, l) => Math.max(max, l.position || 0), 0) + 1;
-      await apiClient.post(`/projects/${selectedProject.id}/lists`, { name: newListName, position: nextPosition });
+      await apiClient.post(`/projects/${selectedProject.id}/lists`, { name: newListName });
       setNewListName('');
       setShowNewListModal(false);
       fetchLists(selectedProject.id);

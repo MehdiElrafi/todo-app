@@ -2,7 +2,9 @@ class List < ApplicationRecord
   belongs_to :project
   has_many :tasks, dependent: :destroy
 
-  validates :name, presence: true
+  validates :name, :position, presence: true
+  validates :position, uniqueness: { scope: :project_id }
+  validates :position, numericality: { only_integer: true, greater_than: 0 }
   attr_accessor :skip_set_position
 
   before_save :set_position, unless: :skip_set_position

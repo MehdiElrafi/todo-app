@@ -7,12 +7,13 @@ class List < ApplicationRecord
   validates :position, numericality: { only_integer: true, greater_than: 0 }
   attr_accessor :skip_set_position
 
-  before_save :set_position, unless: :skip_set_position
+  before_validation :set_position, unless: :skip_set_position
   after_destroy :reorder_positions
 
   private
 
   def set_position
+    return if project.nil?
     return if position.present?
 
     max_position = project.lists.maximum(:position) || 0

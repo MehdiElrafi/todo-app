@@ -10,16 +10,10 @@ RSpec.describe List, type: :model do
 
   describe 'validations' do
     it "validates presence of name" do
-      list = List.new(name: nil)
+      list = List.new(name: nil, project: project)
 
       expect(list.valid?).to be_falsey
       expect(list.errors[:name]).to include("can't be blank")
-    end
-
-    it 'validates presence of position' do
-      list = project.lists.new(name: 'Test List', position: nil)
-      list.valid?
-      expect(list.errors[:position]).to include("can't be blank")
     end
 
     it 'validates uniqueness of position within project scope' do

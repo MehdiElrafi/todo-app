@@ -14,7 +14,8 @@ RSpec.describe "Tasks API", type: :request do
     {
       title: "New Task",
       due_date: Time.zone.today + 3.days,
-      list_id: list.id
+      list_id: list.id,
+      description: "This is a rich text description."
     }
   end
 
@@ -45,6 +46,7 @@ RSpec.describe "Tasks API", type: :request do
     it "returns a successful response" do
       get project_list_task_path(project, list, task)
       expect(response).to have_http_status(:ok)
+      expect(task.description.body.to_s).to include("This is a rich text description.")
     end
   end
 

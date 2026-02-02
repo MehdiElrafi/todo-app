@@ -43,3 +43,10 @@ Metrics/BlockLength:
 Rails/NotNullColumn:
   Enabled: false
   
+Metrics/MethodLength:
+  Exclude:
+    - 'db/migrate/**/*'
+
+Metrics/AbcSize:
+  Exclude:
+    - 'db/migrate/**/*'

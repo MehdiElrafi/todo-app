@@ -20,6 +20,11 @@ RSpec.describe 'update_list_position:update_positions', type: :task do
       let!(:list2) { create(:list, project: project, created_at: 4.days.ago) }
 
       it 'orders lists by created_at timestamp (oldest first)' do
+        # rubocop:disable Rails/SkipsModelValidations
+        list1.update_column(:position, 0)
+        list2.update_column(:position, 10)
+        list3.update_column(:position, 20)
+        # rubocop:enable Rails/SkipsModelValidations
         task.invoke
 
         expect(list1.reload.position).to eq(1) # Oldest

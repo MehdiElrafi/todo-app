@@ -5,7 +5,7 @@ class TasksController < ApplicationController
 
   def index
     @tasks = @list.tasks
-    render json: @tasks
+    render json: @tasks, include: :label, status: :ok
   end
 
   def show

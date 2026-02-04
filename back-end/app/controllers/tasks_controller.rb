@@ -49,7 +49,7 @@ class TasksController < ApplicationController
   end
 
   def task_params
-    params.permit(:title, :due_date, :list_id, :label_id, :description)
+    params.permit(:title, :due_date, :list_id, :label_id, :description, files: [])
   end
 
   def task_to_json(task)

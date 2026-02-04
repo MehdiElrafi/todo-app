@@ -88,4 +88,44 @@ RSpec.describe "Tasks API", type: :request do
       expect(response).to have_http_status(:no_content)
     end
   end
+
+  describe "POST /create with file attachments" do
+    it "attaches files to the task" do
+      file = fixture_file_upload('test.txt', 'text/plain')
+      params = valid_params.merge(files: [file])
+
+      post project_list_tasks_path(project, list), params: params
+      expect(response).to have_http_status(:created)
+
+      created_task = Task.find_by(title: "New Task")
+      expect(created_task.files.count).to eq(1)
+      expect(created_task.files.first.filename).to eq('test.txt')
+    end
+
+    it "attaches multiple files to the task" do
+      file1 = fixture_file_upload('test.txt', 'text/plain')
+      file2 = fixture_file_upload('test.pdf', 'application/pdf')
+      params = valid_params.merge(files: [file1, file2])
+
+      post project_list_tasks_path(project, list), params: params
+      expect(response).to have_http_status(:created)
+
+      created_task = Task.find_by(title: "New Task")
+      expect(created_task.files.count).to eq(2)
+    end
+  end
+
+  describe "PUT /update with file attachments" do
+    it "attaches files to an existing task" do
+      file = fixture_file_upload('test.txt', 'text/plain')
+      params = { files: [file] }
+
+      put project_list_task_path(project, list, task), params: params
+      expect(response).to have_http_status(:ok)
+
+      task.reload
+      expect(task.files.count).to eq(1)
+      expect(task.files.first.filename).to eq('test.txt')
+    end
+  end
 end

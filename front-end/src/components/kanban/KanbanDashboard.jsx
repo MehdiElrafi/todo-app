@@ -23,6 +23,9 @@ const KanbanDashboard = () => {
   const [showLabelPopover, setShowLabelPopover] = useState(false);
   const labelPopoverRef = useRef(null);
   const [openProjectMenu, setOpenProjectMenu] = useState(null);
+  const [descriptionValue, setDescriptionValue] = useState('');
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
+  const descriptionSaveTimeoutRef = useRef(null);
 
   // Fetch all projects
   useEffect(() => {
@@ -144,6 +147,9 @@ const KanbanDashboard = () => {
       // Ensure list_id is set for later use
       data.list_id = listId;
       setSelectedTask(data);
+      // Initialize description - strip HTML tags if present
+      const descriptionText = data.description ? stripHtmlTags(data.description) : '';
+      setDescriptionValue(descriptionText);
       setShowTaskModal(true);
     } catch (error) {
       console.error('Error fetching task:', error);
@@ -304,6 +310,45 @@ const KanbanDashboard = () => {
     } catch (error) {
       console.error('Error removing task label:', error);
     }
+  };
+
+  const handleDescriptionChange = (e) => {
+    const newDescription = e.target.value;
+    setDescriptionValue(newDescription);
+
+    // Clear existing timeout
+    if (descriptionSaveTimeoutRef.current) {
+      clearTimeout(descriptionSaveTimeoutRef.current);
+    }
+
+    // Set a new timeout to save after user stops typing
+    descriptionSaveTimeoutRef.current = setTimeout(() => {
+      saveDescription(newDescription);
+    }, 1000); // Save 1 second after user stops typing
+  };
+
+  const saveDescription = async (description) => {
+    if (!selectedTask || !selectedProject) return;
+
+    setIsSavingDescription(true);
+    try {
+      const updatedTask = await apiClient.patch(
+        `/projects/${selectedProject.id}/lists/${selectedTask.list_id}/tasks/${selectedTask.id}`,
+        { description: description || '' }
+      );
+      setSelectedTask(updatedTask);
+      setIsSavingDescription(false);
+    } catch (error) {
+      console.error('Error saving description:', error);
+      setIsSavingDescription(false);
+    }
+  };
+
+  const stripHtmlTags = (html) => {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || '';
   };
 
   return (
@@ -682,11 +727,27 @@ const KanbanDashboard = () => {
               <p className="text-sm text-gray-500">No due date</p>
             )}
 
+            {/* Description Textarea */}
+            <div className="mt-6 mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+              <textarea
+                value={descriptionValue}
+                onChange={handleDescriptionChange}
+                placeholder="Add a description..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent resize-none text-gray-700 placeholder-gray-400"
+                rows="6"
+              />
+            </div>
+
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => {
                   setShowTaskModal(false);
                   setSelectedTask(null);
+                  setDescriptionValue('');
+                  if (descriptionSaveTimeoutRef.current) {
+                    clearTimeout(descriptionSaveTimeoutRef.current);
+                  }
                 }}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer"
               >

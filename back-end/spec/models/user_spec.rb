@@ -7,6 +7,17 @@ RSpec.describe User, type: :model do
     it { expect(described_class.reflect_on_association(:tasks).macro).to eq(:has_many) }
   end
 
+  describe "name attributes" do
+    it "persists first_name and last_name" do
+      user = create(:user, first_name: "Ada", last_name: "Lovelace")
+
+      expect(user.reload.attributes.slice("first_name", "last_name")).to eq(
+        "first_name" => "Ada",
+        "last_name" => "Lovelace"
+      )
+    end
+  end
+
   describe "password security" do
     let(:user) { build(:user) }
 

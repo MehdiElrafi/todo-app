@@ -172,6 +172,8 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.9-arm-linux-musl)
       racc (~> 1.4)
+    nokogiri (1.18.9-arm64-darwin)
+      racc (~> 1.4)
     nokogiri (1.18.9-x86_64-linux-gnu)
       racc (~> 1.4)
     nokogiri (1.18.9-x86_64-linux-musl)
@@ -183,6 +185,7 @@ GEM
       racc
     pg (1.6.0)
     pg (1.6.0-aarch64-linux)
+    pg (1.6.0-arm64-darwin)
     pg (1.6.0-x86_64-linux)
     pp (0.6.2)
       prettyprint
@@ -327,6 +330,7 @@ GEM
     thor (1.4.0)
     thruster (0.1.14)
     thruster (0.1.14-aarch64-linux)
+    thruster (0.1.14-arm64-darwin)
     thruster (0.1.14-x86_64-linux)
     timeout (0.4.3)
     tsort (0.2.0)
@@ -349,6 +353,7 @@ PLATFORMS
   aarch64-linux-musl
   arm-linux-gnu
   arm-linux-musl
+  arm64-darwin-25
   x86_64-linux
   x86_64-linux-gnu
   x86_64-linux-musl

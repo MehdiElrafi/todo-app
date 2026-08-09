@@ -53,6 +53,21 @@ const apiClient = {
     return true;
   },
 
+  deleteJson: async (endpoint) => {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw { status: response.status, ...result };
+    }
+
+    return result;
+  },
+
   patch: async (endpoint, data) => {
     const response = await fetch(`${API_BASE}${endpoint}`, {
       method: "PATCH",
@@ -61,6 +76,22 @@ const apiClient = {
       },
       credentials: "include",
       body: JSON.stringify(data),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw { status: response.status, ...result };
+    }
+
+    return result;
+  },
+
+  patchFormData: async (endpoint, data) => {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: "PATCH",
+      credentials: "include",
+      body: data,
     });
 
     const result = await response.json().catch(() => ({}));

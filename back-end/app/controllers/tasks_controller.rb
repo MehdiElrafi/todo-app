@@ -1,11 +1,11 @@
 class TasksController < ApplicationController
   before_action :set_project, only: [:index]
   before_action :set_list, only: [:index]
-  before_action :set_task, only: %i[show update destroy]
+  before_action :set_task, only: %i[show update destroy destroy_file]
 
   def index
     @tasks = @list.tasks
-    render json: @tasks, include: :label, status: :ok
+    render json: @tasks.map { |task| task_to_json(task) }, status: :ok
   end
 
   def show
@@ -22,11 +22,23 @@ class TasksController < ApplicationController
   end
 
   def update
-    if @task.update(task_params)
+    attributes = task_params
+    files = attributes.delete(:files)
+
+    if @task.update(attributes)
+      @task.files.attach(files) if files.present?
       render json: task_to_json(@task), status: :ok
     else
       render json: @task.errors, status: :unprocessable_entity
     end
+  end
+
+  def destroy_file
+    file = @task.files.find(params[:file_id])
+    file.purge
+    render json: task_to_json(@task.reload), status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'File not found' }, status: :not_found
   end
 
   def destroy
@@ -49,18 +61,24 @@ class TasksController < ApplicationController
   end
 
   def task_params
-    params.permit(:title, :due_date, :list_id, :label_id, :description)
+    params.permit(:title, :due_date, :list_id, :label_id, :description, files: [])
   end
 
   def task_to_json(task)
-    {
-      id: task.id,
-      title: task.title,
-      due_date: task.due_date,
-      list_id: task.list_id,
-      label_id: task.label_id,
+    task.slice(:id, :title, :due_date, :list_id, :label_id).merge(
       label: task.label,
-      description: task.description.present? ? task.description.body.to_trix_html : nil
+      description: task.description.present? ? task.description.body.to_trix_html : nil,
+      files: task.files.map { |file| file_to_json(file) }
+    )
+  end
+
+  def file_to_json(file)
+    {
+      id: file.id,
+      filename: file.filename.to_s,
+      content_type: file.content_type,
+      byte_size: file.byte_size,
+      url: rails_blob_path(file, only_path: true)
     }
   end
 end

@@ -1,12 +1,27 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 
 const ProfileDropdown = () => {
     const { user, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener("mousedown", handleClickOutside);
+
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, []);
 
     return (
-        <div className="relative">
+        <div ref={dropdownRef} className="relative">
             <button 
               onClick={() => setIsOpen(!isOpen)}
               className="cursor-pointer flex items-center gap-2 rounded-lg transition-colors duration-200"

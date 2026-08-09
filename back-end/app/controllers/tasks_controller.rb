@@ -65,23 +65,20 @@ class TasksController < ApplicationController
   end
 
   def task_to_json(task)
-    {
-      id: task.id,
-      title: task.title,
-      due_date: task.due_date,
-      list_id: task.list_id,
-      label_id: task.label_id,
+    task.slice(:id, :title, :due_date, :list_id, :label_id).merge(
       label: task.label,
       description: task.description.present? ? task.description.body.to_trix_html : nil,
-      files: task.files.map do |file|
-        {
-          id: file.id,
-          filename: file.filename.to_s,
-          content_type: file.content_type,
-          byte_size: file.byte_size,
-          url: rails_blob_path(file, only_path: true)
-        }
-      end
+      files: task.files.map { |file| file_to_json(file) }
+    )
+  end
+
+  def file_to_json(file)
+    {
+      id: file.id,
+      filename: file.filename.to_s,
+      content_type: file.content_type,
+      byte_size: file.byte_size,
+      url: rails_blob_path(file, only_path: true)
     }
   end
 end

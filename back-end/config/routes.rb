@@ -3,7 +3,9 @@ Rails.application.routes.draw do
   resources :projects do
     resources :labels
     resources :lists do
-      resources :tasks
+      resources :tasks do
+        delete 'files/:file_id', to: 'tasks#destroy_file', on: :member
+      end
     end
   end
 

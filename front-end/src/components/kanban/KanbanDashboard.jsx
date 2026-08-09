@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Plus, X, Tag, MoreVertical } from 'lucide-react';
+import { ChevronRight, Plus, X, Tag, MoreVertical, Paperclip, Upload } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import ProfileDropdown from '../auth/ProfileDropdown';
 
@@ -26,6 +26,8 @@ const KanbanDashboard = () => {
   const [descriptionValue, setDescriptionValue] = useState('');
   const [isSavingDescription, setIsSavingDescription] = useState(false);
   const descriptionSaveTimeoutRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
 
   // Fetch all projects
   useEffect(() => {
@@ -344,6 +346,61 @@ const KanbanDashboard = () => {
     }
   };
 
+  const updateTaskInBoard = (updatedTask) => {
+    setTasks((previousTasks) => ({
+      ...previousTasks,
+      [updatedTask.list_id]: (previousTasks[updatedTask.list_id] || []).map((task) =>
+        task.id === updatedTask.id ? { ...task, ...updatedTask } : task
+      ),
+    }));
+  };
+
+  const handleFileUpload = async (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+
+    if (!files.length || !selectedTask || !selectedProject) return;
+
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files[]', file));
+    setIsUploadingFiles(true);
+
+    try {
+      const updatedTask = await apiClient.patchFormData(
+        `/projects/${selectedProject.id}/lists/${selectedTask.list_id}/tasks/${selectedTask.id}`,
+        formData
+      );
+      setSelectedTask(updatedTask);
+      updateTaskInBoard(updatedTask);
+    } catch (error) {
+      console.error('Error uploading task files:', error);
+    } finally {
+      setIsUploadingFiles(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (file) => {
+    if (!selectedTask || !selectedProject) return;
+
+    const shouldDelete = window.confirm(`Delete \"${file.filename}\"? This cannot be undone.`);
+    if (!shouldDelete) return;
+
+    try {
+      const updatedTask = await apiClient.deleteJson(
+        `/projects/${selectedProject.id}/lists/${selectedTask.list_id}/tasks/${selectedTask.id}/files/${file.id}`
+      );
+      setSelectedTask(updatedTask);
+      updateTaskInBoard(updatedTask);
+    } catch (error) {
+      console.error('Error deleting task file:', error);
+    }
+  };
+
+  const getAttachmentUrl = (file) => {
+    if (!file?.url || file.url.startsWith('http')) return file?.url;
+    return `${import.meta.env.VITE_API_URL}${file.url}`;
+  };
+
   const stripHtmlTags = (html) => {
     if (!html) return '';
     const div = document.createElement('div');
@@ -487,18 +544,31 @@ const KanbanDashboard = () => {
                                 </div>
                               )}
                             </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm('Are you sure you want to delete this task?')) {
-                                  deleteTask(list.id, task.id);
-                                }
-                              }}
-                              className="text-gray-400 hover:text-red-600 cursor-pointer"
-                            >
-                              <X size={16} />
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm('Are you sure you want to delete this task?')) {
+                                    deleteTask(list.id, task.id);
+                                  }
+                                }}
+                                className="text-gray-400 hover:text-red-600 cursor-pointer"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
                           </div>
+                          {task.files?.length > 0 && (
+                            <div className="flex justify-end">
+                              <span
+                                className="flex items-center gap-1 text-xs text-gray-500"
+                                title={`${task.files.length} attachment${task.files.length === 1 ? '' : 's'}`}
+                              >
+                                <Paperclip size={15} />
+                                {task.files.length}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -640,8 +710,8 @@ const KanbanDashboard = () => {
       )}
       {/* Task Details Modal */}
       {showTaskModal && selectedTask && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-gray-500/50 flex items-center justify-center z-50 animate-fadeIn">
-          <div className="bg-white rounded-lg p-6 w-96 animate-slideUp">
+        <div className="fixed inset-0 p-4 backdrop-blur-sm bg-gray-500/50 flex items-center justify-center z-50 animate-fadeIn">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto animate-slideUp">
             <div className="flex justify-between items-start gap-2">
               <div className="flex flex-col gap-y-2 flex-1 min-w-0">
                 <h3 className="text-lg font-bold break-words w-full">{selectedTask.title}</h3>
@@ -721,6 +791,25 @@ const KanbanDashboard = () => {
               )}
             </div>
 
+            <div className="mb-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingFiles}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Upload size={16} />
+                {isUploadingFiles ? 'Uploading files...' : 'Upload files'}
+              </button>
+            </div>
+
             {selectedTask.due_date ? (
               <p className="text-sm text-gray-600">Due: {new Date(selectedTask.due_date).toLocaleDateString()}</p>
             ) : (
@@ -737,6 +826,41 @@ const KanbanDashboard = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent resize-none text-gray-700 placeholder-gray-400"
                 rows="6"
               />
+            </div>
+
+            <div className="mb-6">
+              <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <Paperclip size={16} />
+                Attachments
+              </h4>
+              {selectedTask.files?.length ? (
+                <ul className="space-y-2">
+                  {selectedTask.files.map((file) => (
+                    <li key={file.id} className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2">
+                      <a
+                        href={getAttachmentUrl(file)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="min-w-0 flex-1 truncate text-sm text-purple-700 hover:text-purple-800"
+                        title={file.filename}
+                      >
+                        {file.filename}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAttachment(file)}
+                        className="flex-shrink-0 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 cursor-pointer"
+                        aria-label={`Delete ${file.filename}`}
+                        title={`Delete ${file.filename}`}
+                      >
+                        <X size={16} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">No attachments yet.</p>
+              )}
             </div>
 
             <div className="mt-6 flex justify-end">

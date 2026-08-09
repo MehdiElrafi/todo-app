@@ -10,6 +10,8 @@ RSpec.describe "Sessions API", type: :request do
       expect(response).to have_http_status(:created)
       json = response.parsed_body
       expect(json["email_address"]).to eq(user.email_address)
+      expect(json["first_name"]).to eq(user.first_name)
+      expect(json["last_name"]).to eq(user.last_name)
     end
 
     it "fails with invalid credentials" do
@@ -29,6 +31,8 @@ RSpec.describe "Sessions API", type: :request do
       expect(response).to have_http_status(:ok)
       json = response.parsed_body
       expect(json["email_address"]).to eq(user.email_address)
+      expect(json["first_name"]).to eq(user.first_name)
+      expect(json["last_name"]).to eq(user.last_name)
     end
   end
 

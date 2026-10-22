@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { ChevronRight, Plus, X, Tag, MoreVertical, Paperclip, Upload } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import ProfileDropdown from '../auth/ProfileDropdown';
@@ -292,7 +293,9 @@ const KanbanDashboard = () => {
         `/projects/${selectedProject.id}/lists/${selectedTask.list_id}/tasks/${selectedTask.id}`,
         { label_id: labelId }
       );
-      setSelectedTask(updatedTask);
+      const taskWithListId = { ...updatedTask, list_id: updatedTask.list_id ?? selectedTask.list_id };
+      setSelectedTask(taskWithListId);
+      updateTaskInBoard(taskWithListId, selectedTask.list_id);
       setShowLabelPopover(false);
     } catch (error) {
       console.error('Error updating task label:', error);
@@ -307,7 +310,9 @@ const KanbanDashboard = () => {
         `/projects/${selectedProject.id}/lists/${selectedTask.list_id}/tasks/${selectedTask.id}`,
         { label_id: null }
       );
-      setSelectedTask(updatedTask);
+      const taskWithListId = { ...updatedTask, list_id: updatedTask.list_id ?? selectedTask.list_id };
+      setSelectedTask(taskWithListId);
+      updateTaskInBoard(taskWithListId, selectedTask.list_id);
       setShowLabelPopover(false);
     } catch (error) {
       console.error('Error removing task label:', error);
@@ -338,7 +343,9 @@ const KanbanDashboard = () => {
         `/projects/${selectedProject.id}/lists/${selectedTask.list_id}/tasks/${selectedTask.id}`,
         { description: description || '' }
       );
-      setSelectedTask(updatedTask);
+      const taskWithListId = { ...updatedTask, list_id: updatedTask.list_id ?? selectedTask.list_id };
+      setSelectedTask(taskWithListId);
+      updateTaskInBoard(taskWithListId, selectedTask.list_id);
       setIsSavingDescription(false);
     } catch (error) {
       console.error('Error saving description:', error);
@@ -346,13 +353,81 @@ const KanbanDashboard = () => {
     }
   };
 
-  const updateTaskInBoard = (updatedTask) => {
+  const updateTaskInBoard = (updatedTask, fallbackListId) => {
+    const listId = updatedTask.list_id ?? fallbackListId;
+    if (listId == null) return;
+
     setTasks((previousTasks) => ({
       ...previousTasks,
-      [updatedTask.list_id]: (previousTasks[updatedTask.list_id] || []).map((task) =>
+      [listId]: (previousTasks[listId] || []).map((task) =>
         task.id === updatedTask.id ? { ...task, ...updatedTask } : task
       ),
     }));
+  };
+
+  const handleDragEnd = async (result) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    const sourceListId = source.droppableId;
+    const destListId = destination.droppableId;
+    const taskId = draggableId;
+    const sourceTasks = [...(tasks[sourceListId] || [])];
+    const [movedTask] = sourceTasks.splice(source.index, 1);
+
+    if (!movedTask) return;
+
+    if (sourceListId === destListId) {
+      sourceTasks.splice(destination.index, 0, movedTask);
+      setTasks((previousTasks) => ({
+        ...previousTasks,
+        [sourceListId]: sourceTasks,
+      }));
+      return;
+    }
+
+    const destTasks = [...(tasks[destListId] || [])];
+    const movedTaskWithNewList = { ...movedTask, list_id: Number(destListId) };
+    destTasks.splice(destination.index, 0, movedTaskWithNewList);
+
+    setTasks((previousTasks) => ({
+      ...previousTasks,
+      [sourceListId]: sourceTasks,
+      [destListId]: destTasks,
+    }));
+
+    try {
+      const updatedTask = await apiClient.patch(
+        `/projects/${selectedProject.id}/lists/${destListId}/tasks/${taskId}`,
+        { list_id: destListId }
+      );
+
+      if (updatedTask) {
+        updateTaskInBoard(
+          { ...updatedTask, list_id: updatedTask.list_id ?? Number(destListId) },
+          Number(destListId)
+        );
+      }
+
+      if (selectedTask?.id === movedTask.id) {
+        setSelectedTask((previousTask) => ({
+          ...previousTask,
+          ...updatedTask,
+          list_id: updatedTask?.list_id ?? Number(destListId),
+        }));
+      }
+    } catch (error) {
+      console.error('Error updating task list:', error);
+      fetchLists(selectedProject.id);
+    }
   };
 
   const handleFileUpload = async (event) => {
@@ -371,7 +446,7 @@ const KanbanDashboard = () => {
         formData
       );
       setSelectedTask(updatedTask);
-      updateTaskInBoard(updatedTask);
+      updateTaskInBoard(updatedTask, selectedTask.list_id);
     } catch (error) {
       console.error('Error uploading task files:', error);
     } finally {
@@ -390,7 +465,7 @@ const KanbanDashboard = () => {
         `/projects/${selectedProject.id}/lists/${selectedTask.list_id}/tasks/${selectedTask.id}/files/${file.id}`
       );
       setSelectedTask(updatedTask);
-      updateTaskInBoard(updatedTask);
+      updateTaskInBoard(updatedTask, selectedTask.list_id);
     } catch (error) {
       console.error('Error deleting task file:', error);
     }
@@ -503,7 +578,8 @@ const KanbanDashboard = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
           </div>
         ) : (
-          <div className="flex-1 overflow-auto">
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="flex-1 overflow-auto">
             <div className="p-6 flex gap-4 min-h-min">
               {lists.map(list => (
                 <div key={list.id} className="flex-shrink-0 w-80">
@@ -522,56 +598,75 @@ const KanbanDashboard = () => {
                       </button>
                     </div>
                     
-                    <div className="flex-1 space-y-3 overflow-y-auto mb-4">
-                      {tasks[list.id]?.map(task => (
+                    <Droppable droppableId={String(list.id)}>
+                      {(provided) => (
                         <div
-                          key={task.id}
-                          className="bg-white rounded-lg p-3 cursor-pointer border border-transparent hover:border-purple-700"
-                          onClick={() => showTask(list.id, task.id)}
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className="flex flex-1 flex-col overflow-y-auto mb-4"
                         >
-                          <div className="flex justify-between items-start mb-1 gap-2">
-                            <div className="flex flex-col gap-y-2 flex-1 min-w-0">
-                              <h4 className="font-medium text-gray-800 break-words w-full">{task.title}</h4>
-                              {/* Selected Label Display */}
-                              {task.label && (
-                                <div className="mb-3 flex items-center gap-2">
-                                  <div
-                                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-white text-sm font-medium"
-                                    style={{ backgroundColor: task.label.color || '#999999' }}
-                                  >
-                                    <span>{task.label.name}</span>
+                          {tasks[list.id]?.map((task, index) => (
+                            <Draggable key={task.id} draggableId={String(task.id)} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`mb-3 bg-white rounded-lg p-3 cursor-pointer border transition-shadow ${
+                                    snapshot.isDragging
+                                      ? 'border-purple-700 shadow-lg'
+                                      : 'border-transparent hover:border-purple-700'
+                                  }`}
+                                  onClick={() => showTask(list.id, task.id)}
+                                >
+                                  <div className="flex justify-between items-start mb-1 gap-2">
+                                    <div className="flex flex-col gap-y-2 flex-1 min-w-0">
+                                      <h4 className="font-medium text-gray-800 break-words w-full">{task.title}</h4>
+                                      {/* Selected Label Display */}
+                                      {task.label && (
+                                        <div className="mb-3 flex items-center gap-2">
+                                          <div
+                                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-white text-sm font-medium"
+                                            style={{ backgroundColor: task.label.color || '#999999' }}
+                                          >
+                                            <span>{task.label.name}</span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (window.confirm('Are you sure you want to delete this task?')) {
+                                            deleteTask(list.id, task.id);
+                                          }
+                                        }}
+                                        className="text-gray-400 hover:text-red-600 cursor-pointer"
+                                      >
+                                        <X size={16} />
+                                      </button>
+                                    </div>
                                   </div>
+                                  {task.files?.length > 0 && (
+                                    <div className="flex justify-end">
+                                      <span
+                                        className="flex items-center gap-1 text-xs text-gray-500"
+                                        title={`${task.files.length} attachment${task.files.length === 1 ? '' : 's'}`}
+                                      >
+                                        <Paperclip size={15} />
+                                        {task.files.length}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (window.confirm('Are you sure you want to delete this task?')) {
-                                    deleteTask(list.id, task.id);
-                                  }
-                                }}
-                                className="text-gray-400 hover:text-red-600 cursor-pointer"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          </div>
-                          {task.files?.length > 0 && (
-                            <div className="flex justify-end">
-                              <span
-                                className="flex items-center gap-1 text-xs text-gray-500"
-                                title={`${task.files.length} attachment${task.files.length === 1 ? '' : 's'}`}
-                              >
-                                <Paperclip size={15} />
-                                {task.files.length}
-                              </span>
-                            </div>
-                          )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </Droppable>
                     
                     <button
                       onClick={() => {
@@ -598,6 +693,7 @@ const KanbanDashboard = () => {
               </div>
             </div>
           </div>
+          </DragDropContext>
         )}
       </div>
 
